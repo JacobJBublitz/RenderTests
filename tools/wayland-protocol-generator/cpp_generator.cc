@@ -6,6 +6,7 @@
 #include <iostream>
 #include <locale>
 #include <sstream>
+#include <vector>
 
 namespace {
 
@@ -42,14 +43,6 @@ std::string TrimString(const std::string &str) {
   while (std::isspace(str[end_pos])) end_pos--;
 
   return str.substr(start_pos, end_pos - start_pos);
-}
-
-std::string TryRemovePrefix(const std::string &str, const std::string &prefix) {
-  if (str.size() < prefix.size()) return str;
-
-  if (str.substr(0, prefix.size()) == prefix) return str.substr(prefix.size());
-
-  return str;
 }
 
 }  // namespace
@@ -114,9 +107,9 @@ std::string CppGenerator::FormatArgumentType(const Interface &interface,
   }
 }
 
-std::string CppGenerator::FormatEnumEntry(const Interface &interface,
-                                          const Enum &e,
-                                          const Enum::Entry &entry) const {
+std::string CppGenerator::FormatEnumEntry(
+    [[maybe_unused]] const Interface &interface, [[maybe_unused]] const Enum &e,
+    const Enum::Entry &entry) const {
   return fmt::format("k{0}", ToUpperCamelCase(entry.GetName()));
 }
 
@@ -125,8 +118,8 @@ std::string CppGenerator::FormatEnumType(const Interface &interface,
   return FormatInterfaceType(interface) + ToUpperCamelCase(e.GetName());
 }
 
-std::string CppGenerator::FormatEventName(const Interface &interface,
-                                          const Event &event) const {
+std::string CppGenerator::FormatEventName(
+    [[maybe_unused]] const Interface &interface, const Event &event) const {
   return ToUpperCamelCase(event.GetName());
 }
 
@@ -155,8 +148,8 @@ void CppGenerator::Generate(const Protocol &protocol) {
   source_output_stream << "#include \"wayland.h\"\n";
 }
 
-std::string CppGenerator::FormatRequestName(const Interface &interface,
-                                            const Request &request) const {
+std::string CppGenerator::FormatRequestName(
+    [[maybe_unused]] const Interface &interface, const Request &request) const {
   return ToUpperCamelCase(request.GetName());
 }
 
@@ -199,7 +192,17 @@ void CppGenerator::GenerateHeader(std::ostream &out, const Protocol &protocol) {
 }
 
 void CppGenerator::GenerateSource(std::ostream &out, const Protocol &protocol) {
+  std::stringstream interface_definitions;
 
+  for (auto &interface : protocol.Interfaces)
+    MakeInterfaceValueDefinition(interface_definitions, interface);
+
+  out << "#include \"" << protocol.Name << "." << header_extension_ << "\"\n"
+      << "\n"
+      << "namespace " << root_namespace_ << " {\n"
+      << "\n"
+      << interface_definitions.str() << "\n"
+      << "}  // namespace " << root_namespace_ << "\n";
 }
 
 std::optional<std::pair<Interface, Enum>> CppGenerator::LookupEnum(
@@ -380,4 +383,6 @@ void CppGenerator::MakeInterfaceClassDefinition(
 }
 
 void CppGenerator::MakeInterfaceValueDefinition(
-    std::ostream &out, const Interface &interface) const {}
+    std::ostream &out, const Interface &interface) const {
+  out << "const Interface *" << FormatInterfaceValue(interface) << ";\n";
+}

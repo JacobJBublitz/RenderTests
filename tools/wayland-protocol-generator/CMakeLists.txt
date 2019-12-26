@@ -11,3 +11,6 @@ set_target_properties(wayland-protocol-generator PROPERTIES
                       CXX_STANDARD_REQUIRED ON)
 target_include_directories(wayland-protocol-generator PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(wayland-protocol-generator PUBLIC
+                       "-Wall" "-Wextra" "-Werror")
+     

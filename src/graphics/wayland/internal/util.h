@@ -20,7 +20,7 @@ using LogFunc = void (*)(const char *message, va_list);
 
 struct Fixed {
  private:
-  int32_t private_;
+  [[maybe_unused]] int32_t private_;
 };
 static_assert(sizeof(Fixed) == sizeof(int32_t));
 

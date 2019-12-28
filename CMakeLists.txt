@@ -13,24 +13,13 @@ add_subdirectory(third_party/tinyxml2)
 
 add_subdirectory(tools/wayland-protocol-generator)
 
-file(GLOB_RECURSE SOURCES src/*.cc src/*.h src/*.inl)
-
-add_custom_command(
-    OUTPUT src/graphics/wayland/internal/wayland.h
-           src/graphics/wayland/internal/wayland.cc
-    COMMAND wayland-protocol-generator ARGS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/wayland/protocol/wayland.xml"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/wayland/internal"
-)
-
-list(APPEND SOURCES
-     "src/graphics/wayland/internal/wayland.cc"
-     "src/graphics/wayland/internal/wayland.h")
+add_subdirectory(src)
 
 add_executable(RenderTests ${SOURCES})
-target_link_libraries(RenderTests PUBLIC X11 dl fmt wayland-client)
+target_link_libraries(RenderTests PUBLIC dl fmt ${LINK_LIBRARIES})
 target_include_directories(RenderTests PRIVATE src)
 set_target_properties(RenderTests PROPERTIES
-                      CXX_STANDARD 20
+                      CXX_STANDARD 17
                       CXX_STANDARD_REQUIRED ON)
 target_compile_options(RenderTests PUBLIC
                       "-Wall" "-Wextra" "-Werror" "-Wno-unused-variable" "-Wno-unused-parameter")

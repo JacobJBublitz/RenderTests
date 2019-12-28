@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/wayland/internal/wayland.h"
+#include "graphics/wayland/internal/xdg_shell.h"
 #include "graphics/window.h"
 
 namespace graphics::wayland {
@@ -20,9 +21,23 @@ class WlDisplay final : public Display {
 
   void HandleEvents() final;
 
+  internal::Compositor *GetCompositor() noexcept { return compositor_; }
+
+  internal::Shell *GetShell() noexcept { return shell_; }
+
+  internal::Shm *GetShm() noexcept { return shm_; }
+
+  internal::XdgWmBase *GetXdgWmBase() noexcept { return xdg_wm_base_; }
+
  private:
+  static const internal::Registry::Listener RegistryListener;
+  static const internal::XdgWmBase::Listener XdgWmBaseListener;
+
   internal::Display *handle_;
   internal::Compositor *compositor_;
+  internal::Shell *shell_;
+  internal::Shm *shm_;
+  internal::XdgWmBase *xdg_wm_base_;
 
   WlDisplay(internal::Display *handle);
 
@@ -31,6 +46,9 @@ class WlDisplay final : public Display {
                              uint32_t version) noexcept;
   static void RegistryGlobalRemove(void *data, internal::Registry *registry,
                                    uint32_t name) noexcept;
+
+  static void XdgWmBasePing(void *data, internal::XdgWmBase *xdg_wm_base,
+                            uint32_t serial) noexcept;
 };
 
 }  // namespace graphics::wayland

@@ -45,11 +45,55 @@ std::string TrimString(const std::string &str) {
   return str.substr(start_pos, end_pos - start_pos);
 }
 
+std::string MakeSignature(const std::list<Argument> &args,
+                          std::optional<uint32_t> since = std::nullopt) {
+  std::stringstream ss;
+
+  if (since) ss << since.value();
+
+  for (auto &a : args) {
+    if (a.GetAllowNull()) ss << '?';
+
+    switch (a.GetType()) {
+      case Argument::Type::kInt:
+        ss << 'i';
+        break;
+      case Argument::Type::kUint:
+        ss << 'u';
+        break;
+      case Argument::Type::kFixed:
+        ss << 'f';
+        break;
+      case Argument::Type::kString:
+        ss << 's';
+        break;
+      case Argument::Type::kObject:
+        ss << 'o';
+        break;
+      case Argument::Type::kNewId:
+        if (!a.GetInterface()) ss << "su";
+        ss << 'n';
+        break;
+      case Argument::Type::kArray:
+        ss << 'a';
+        break;
+      case Argument::Type::kFd:
+        ss << 'h';
+        break;
+    }
+  }
+
+  return ss.str();
+}
+
 }  // namespace
 
 CppGenerator::~CppGenerator() = default;
 
-void CppGenerator::AddProtocol(const Protocol &protocol) {
+void CppGenerator::AddProtocol(const Protocol &protocol, bool add_include) {
+  if (add_include)
+    additional_includes_.push_back(fmt::format("{0}.h", protocol.Name));
+
   for (const auto &interface : protocol.Interfaces) {
     interfaces_[interface.Name] = interface;
 
@@ -145,7 +189,7 @@ void CppGenerator::Generate(const Protocol &protocol) {
 
   std::ofstream source_output_stream{
       fmt::format("{0}.{1}", protocol.Name, source_extension_)};
-  source_output_stream << "#include \"wayland.h\"\n";
+  GenerateSource(source_output_stream, protocol);
 }
 
 std::string CppGenerator::FormatRequestName(
@@ -178,9 +222,15 @@ void CppGenerator::GenerateHeader(std::ostream &out, const Protocol &protocol) {
       << "\n"
       << "#include <cstdint>\n"
       << "\n"
-      << "#include \"core.h\"\n"
-      << "#include \"util.h\"\n"
-      << "\n"
+      << "#include \"graphics/wayland/internal/core.h\"\n"
+      << "#include \"graphics/wayland/internal/util.h\"\n"
+      << "\n";
+
+  for (auto &inc : additional_includes_) {
+    out << "#include \"" << inc << "\"\n";
+  }
+
+  out << "\n"
       << "namespace " << root_namespace_ << " {\n\n";
 
   out << class_declarations.str() << "\n"
@@ -319,6 +369,8 @@ void CppGenerator::MakeInterfaceClassDefinition(
       if (arg.GetType() == Argument::Type::kNewId) {
         ret_type = FormatArgumentType(interface, arg);
         if (arg.GetInterface()) {
+          if (!param_names.str().empty()) param_names << ", ";
+          param_names << "nullptr";
           ret_interface = LookupInterface(arg.GetInterface().value()).value();
         } else {
           if (!param_stream.str().empty()) param_stream << ", ";
@@ -358,8 +410,8 @@ void CppGenerator::MakeInterfaceClassDefinition(
       body_stream << "    return reinterpret_cast<"
                   << FormatInterfaceType(ret_interface.value()) << " *>(\n"
                   << "        MarshalConstructor(" << request_opcode << ", &"
-                  << FormatInterfaceValue(ret_interface.value())
-                  << ", nullptr));\n";
+                  << FormatInterfaceValue(ret_interface.value()) << ", "
+                  << param_names.str() << "));\n";
     } else {
       // If theres's nothing else special just use Marshal to send the request
       // to the server
@@ -384,5 +436,72 @@ void CppGenerator::MakeInterfaceClassDefinition(
 
 void CppGenerator::MakeInterfaceValueDefinition(
     std::ostream &out, const Interface &interface) const {
-  out << "const Interface *" << FormatInterfaceValue(interface) << ";\n";
+  std::stringstream method_messages;
+  std::stringstream event_messages;
+  std::stringstream method_arguments;
+  std::stringstream event_arguments;
+
+  for (auto &req : interface.Requests) {
+    auto arguments_name = FormatInterfaceType(interface) +
+                          FormatRequestName(interface, req) + "Arguments";
+    if (method_messages.str().empty()) method_messages << '\n';
+    method_messages << fmt::format(
+        "  {{ \"{0}\", \"{1}\", {2} }},\n", req.GetName(),
+        MakeSignature(req.GetArguments(), req.GetSince()), arguments_name);
+
+    method_arguments << "const Interface *" << FormatInterfaceType(interface)
+                     << FormatRequestName(interface, req)
+                     << "Arguments[] = {\n";
+    for (auto &arg : req.GetArguments()) {
+      method_arguments << "  ";
+      if (arg.GetInterface())
+        method_arguments
+            << "&"
+            << FormatInterfaceValue(
+                   LookupInterface(arg.GetInterface().value()).value());
+      else
+        method_arguments << "nullptr";
+      method_arguments << ",\n";
+    }
+    method_arguments << "};\n";
+  }
+
+  for (auto &ev : interface.Events) {
+    auto arguments_name = FormatInterfaceType(interface) +
+                          FormatEventName(interface, ev) + "Arguments";
+    if (event_messages.str().empty()) event_messages << '\n';
+    event_messages << fmt::format(
+        "  {{ \"{0}\", \"{1}\", {2} }},\n", ev.GetName(),
+        MakeSignature(ev.GetArguments(), ev.GetSince()), arguments_name);
+
+    event_arguments << "const Interface *" << arguments_name << "[] = {\n";
+    for (auto &arg : ev.GetArguments()) {
+      event_arguments << "  ";
+      if (arg.GetInterface())
+        event_arguments
+            << "&"
+            << FormatInterfaceValue(
+                   LookupInterface(arg.GetInterface().value()).value());
+      else
+        event_arguments << "nullptr";
+      event_arguments << ",\n";
+    }
+    event_arguments << "};\n";
+  }
+
+  out << method_arguments.str() << "const Message "
+      << FormatInterfaceType(interface) << "MethodMessages[] = {"
+      << method_messages.str() << "};\n"
+      << event_arguments.str() << "const Message "
+      << FormatInterfaceType(interface) << "EventMessages[] = {"
+      << event_messages.str() << "};\n"
+      << "const Interface " << FormatInterfaceValue(interface) << " = {\n"
+      << "  .Name = \"" << interface.Name << "\",\n"
+      << "  .Version = " << interface.Version << ",\n"
+      << "  .MethodCount = " << interface.Requests.size() << ",\n"
+      << "  .Methods = " << FormatInterfaceType(interface)
+      << "MethodMessages,\n"
+      << "  .EventCount = " << interface.Events.size() << ",\n"
+      << "  .Events = " << FormatInterfaceType(interface) << "EventMessages,\n"
+      << "};\n";
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <ostream>
 #include <unordered_map>
 #include <utility>
@@ -10,7 +11,7 @@ class CppGenerator final : public Generator {
  public:
   ~CppGenerator() final;
 
-  void AddProtocol(const Protocol &protocol);
+  void AddProtocol(const Protocol &protocol, bool add_include = true);
 
   void Generate(const Protocol &protocol) final;
 
@@ -24,6 +25,8 @@ class CppGenerator final : public Generator {
   std::string header_extension_ = "h";
 
   std::string root_namespace_ = "graphics::wayland::internal";
+
+  std::list<std::string> additional_includes_;
 
   std::unordered_map<std::string, std::pair<Interface, Enum>> enums_;
   std::unordered_map<std::string, Interface> interfaces_;

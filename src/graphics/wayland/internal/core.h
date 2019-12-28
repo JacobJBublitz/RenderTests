@@ -20,6 +20,9 @@ static_assert(sizeof(EventQueue) == 1);
 
 class Proxy {
  public:
+  Proxy() = delete;
+  ~Proxy() = delete;
+
   Proxy *Create(const Interface *interface);
   Proxy *CreateWrapper();
 
@@ -49,10 +52,22 @@ class Proxy {
   }
   void Marshal(uint32_t opcode) { MarshalArray(opcode, nullptr); }
   void MarshalArray(uint32_t opcode, Argument *args);
-  Proxy *MarshalConstructor(uint32_t opcode, const Interface *interface, ...);
+  template <typename... Args>
+  Proxy *MarshalConstructor(uint32_t opcode, const Interface *interface,
+                            Args... args) {
+    std::vector<Argument> arg_array;
+    PopulateArgumentArray(arg_array, args...);
+    return MarshalArrayConstructor(opcode, arg_array.data(), interface);
+  }
+  template <typename... Args>
   Proxy *MarshalConstructorVersioned(uint32_t opcode,
                                      const Interface *interface,
-                                     uint32_t version, ...);
+                                     uint32_t version, Args... args) {
+    std::vector<Argument> arg_array;
+    PopulateArgumentArray(arg_array, args...);
+    return MarshalArrayConstructorVersioned(opcode, arg_array.data(), interface,
+                                            version);
+  }
   Proxy *MarshalArrayConstructor(uint32_t opcode, Argument *args,
                                  const Interface *interface);
   Proxy *MarshalArrayConstructorVersioned(uint32_t opcode, Argument *args,
@@ -100,24 +115,5 @@ class DisplayBase : public Proxy {
   int GetFd();
 };
 static_assert(sizeof(DisplayBase) == 1);
-
-template <typename T>
-class ScopedProxy {
- public:
-  ScopedProxy() : value_(nullptr) {}
-  ScopedProxy(T *value) : value_(value) {}
-  ScopedProxy(const ScopedProxy<T> &) = delete;
-  ~ScopedProxy() {
-    if (value_) {
-      value_->Destroy();
-    }
-  }
-
-  T *operator->() noexcept { return value_; }
-  const T *operator->() const noexcept { return value_; }
-
- private:
-  T *value_;
-};
 
 }  // namespace graphics::wayland::internal

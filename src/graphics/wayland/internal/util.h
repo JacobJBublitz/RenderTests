@@ -41,6 +41,7 @@ union Argument {
   Argument(internal::Fixed val) : Fixed(val) {}
   Argument(const char *val) : String(val) {}
   Argument(internal::Object *val) : Object(val) {}
+  Argument(std::nullptr_t) : Object(nullptr) {}
 };
 
 struct Interface {

@@ -1,4 +1,4 @@
-#include "egl.h"
+#include "internal.h"
 
 #include <exception>
 #include <iostream>
@@ -6,9 +6,7 @@
 namespace {
 
 void LoadCoreFunctions(util::Library &library) {
-  using namespace graphics::egl::functions;
-  using namespace graphics::egl::functions::names;
-  using namespace graphics::egl::functions::types;
+  using namespace graphics::egl::internal;
 
   // EGL 1.0
   ChooseConfig =
@@ -106,7 +104,7 @@ void LoadExtensionFunctions() {}
 
 }  // namespace
 
-namespace graphics::egl {
+namespace graphics::egl::internal {
 
 namespace functions {
 
@@ -216,4 +214,4 @@ void LoadFunctions(util::Library &library) {
   LoadExtensionFunctions();
 }
 
-}  // namespace graphics::egl
+}  // namespace graphics::egl::internal

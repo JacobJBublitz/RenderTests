@@ -98,13 +98,13 @@ class DisplayBase : public Proxy {
   int Flush();
 
   int Dispatch();
+  int DispatchPending();
   int DispatchQueue(EventQueue *queue);
   int DispatchQueuePending(EventQueue *queue);
-  int DispatchPending();
 
   int PrepareRead();
   int PrepareReadQueue(EventQueue *queue);
-  int CancelRead();
+  void CancelRead();
   int ReadEvents();
 
   int Roundtrip();

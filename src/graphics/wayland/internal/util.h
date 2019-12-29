@@ -18,9 +18,57 @@ using DispatcherFunc = int (*)(const void *dispatcher_data, void *target,
                                Argument *args);
 using LogFunc = void (*)(const char *message, va_list);
 
-struct Fixed {
+class Array {
+ public:
+  Array();
+  ~Array();
+
+  void *Add(size_t size);
+
+  int CopyTo(Array &dest);
+
+  size_t GetSize() const noexcept { return size_; }
+
+  void *GetData() noexcept { return data_; }
+
  private:
-  [[maybe_unused]] int32_t private_;
+  size_t size_;
+  size_t alloc_;
+  void *data_;
+};
+
+struct Fixed {
+ public:
+  double ToDouble() {
+    union {
+      double d;
+      int64_t i;
+    } u;
+
+    u.i = ((1023LL + 44LL) << 52) + (1LL << 51) + private_;
+
+    return u.d - (3LL << 43);
+  }
+
+  static Fixed FromDouble(double d) {
+    union {
+      double d;
+      int64_t i;
+    } u;
+
+    u.d = d + (3LL << (51 - 8));
+
+    return {static_cast<int32_t>(u.i)};
+  }
+
+  int ToInt() { return private_ / 256; }
+
+  static Fixed FromInt(int i) { return {i * 256}; }
+
+ private:
+  Fixed(int32_t p) : private_(p) {}
+
+  int32_t private_;
 };
 static_assert(sizeof(Fixed) == sizeof(int32_t));
 

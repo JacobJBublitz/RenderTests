@@ -1,46 +1,94 @@
 #include "window.h"
 
+#include <fmt/format.h>
+#include <glog/logging.h>
+
 #include <cstring>
+#include <iostream>
 
 namespace graphics::wayland {
 
-WlWindow::WlWindow(WlDisplay &display, uint32_t width, uint32_t height)
-    : display_(display) {
-  surface_ = display_.GetCompositor()->CreateSurface();
+WlSurface::WlSurface(internal::Surface *handle) : handle_(handle) {
+  LOG_IF(FATAL, handle == nullptr) << "Surface handle is null";
 
-  if (display_.GetXdgWmBase()) {
-    auto base = display_.GetXdgWmBase();
-    xdg_surface_ = base->GetXdgSurface(surface_);
-    xdg_top_level_ = xdg_surface_->GetToplevel();
-  } else {
-    shell_surface_ = display_.GetShell()->GetShellSurface(surface_);
-  }
+  handle_->SetUserData(this);
+
+  handle_->AddListener(
+      {
+          .Enter =
+              [](void *data, internal::Surface *surface,
+                 internal::Output *output) {
+                WlSurface *this_ptr = reinterpret_cast<WlSurface *>(data);
+
+                this_ptr->outputs_.push_back(output);
+              },
+          .Leave =
+              [](void *data, internal::Surface *surface,
+                 internal::Output *output) {
+                WlSurface *this_ptr = reinterpret_cast<WlSurface *>(data);
+
+                this_ptr->outputs_.remove(output);
+              },
+      },
+      this);
+}
+
+WlSurface::~WlSurface() { handle_->Destroy(); }
+
+egl::internal::Surface *WlSurface::CreateEglSurface(
+    egl::internal::Display *display, egl::internal::Config *config) {
+  return egl::internal::CreatePlatformWindowSurface(display, config, handle_,
+                                                    nullptr);
+}
+
+void WlSurface::HandlePointerMotion(uint32_t time, double x, double y) {
+  LOG(INFO) << "X: " << x << ", Y: " << y;
+}
+
+const internal::XdgSurface::Listener WlWindow::XdgSurfaceListener{
+    .Configure = XdgSurfaceConfigureEvent,
+};
+const internal::XdgToplevel::Listener WlWindow::XdgToplevelListener{
+    .Configure = XdgToplevelConfigureEvent,
+    .Close = XdgToplevelCloseEvent,
+};
+
+WlWindow::WlWindow(WlDisplay &display, const std::string &title, uint32_t width,
+                   uint32_t height)
+    : WlSurface(display.GetCompositor()),
+      egl_surface_(GetSurfaceHandle(), static_cast<int>(width),
+                   static_cast<int>(height)) {
+  xdg_surface_ = display.GetXdgWmBase()->GetXdgSurface(GetSurfaceHandle());
+  xdg_surface_->AddListener(XdgSurfaceListener, this);
+
+  xdg_toplevel_ = xdg_surface_->GetToplevel();
+  xdg_toplevel_->AddListener(XdgToplevelListener, this);
+  xdg_toplevel_->SetTitle(title.c_str());
 
   framebuffer_mem_ = std::make_unique<posix::SharedMemory>(width * height * 4);
 
-  fb_pool_ = display_.GetShm()->CreatePool(framebuffer_mem_->GetFd(),
-                                           framebuffer_mem_->GetSize());
+  fb_pool_ = display.GetShm()->CreatePool(framebuffer_mem_->GetFd(),
+                                          framebuffer_mem_->GetSize());
   framebuffer_ = fb_pool_->CreateBuffer(0, width, height, width * 4,
                                         internal::ShmFormat::kXrgb8888);
 
-  for (auto i = 0u; i < width; i++)
-    for (auto j = 0u; j < height; j++)
+  for (auto i = 0u; i < height; i++) {
+    uint32_t val = rand();
+    for (auto j = 0u; j < width; j++)
       reinterpret_cast<uint32_t *>(
-          framebuffer_mem_->GetPointer())[j * width + i] = rand();
+          framebuffer_mem_->GetPointer())[i * width + j] = val;
+  }
 
-  surface_->Attach(framebuffer_, 0, 0);
-  surface_->Commit();
+  GetSurfaceHandle()->Attach(framebuffer_, 0, 0);
+  GetSurfaceHandle()->Commit();
 }
 
 WlWindow::~WlWindow() {
-  if (shell_surface_) shell_surface_->Destroy();
-
-  if (xdg_top_level_) xdg_top_level_->Destroy();
-  if (xdg_surface_) xdg_surface_->Destroy();
+  xdg_toplevel_->Destroy();
+  xdg_surface_->Destroy();
 
   framebuffer_->Destroy();
   fb_pool_->Destroy();
-  surface_->Destroy();
 }
 
 void WlWindow::SetPosition(int32_t x, int32_t y) {
@@ -59,13 +107,20 @@ void WlWindow::GetSize(uint32_t &width, uint32_t &height) const noexcept {
   // TODO: Implement
 }
 
-void WlWindow::SetVisible(bool visible) {
-  if (shell_surface_) shell_surface_->SetToplevel();
+void WlWindow::XdgSurfaceConfigureEvent(void *data,
+                                        internal::XdgSurface *surface,
+                                        uint32_t serial) noexcept {
+  surface->AckConfigure(serial);
 }
+void WlWindow::XdgToplevelConfigureEvent(void *data,
+                                         internal::XdgToplevel *toplevel,
+                                         int32_t width, int32_t height,
+                                         internal::Array *states) noexcept {}
+void WlWindow::XdgToplevelCloseEvent(void *data,
+                                     internal::XdgToplevel *toplevel) noexcept {
+  WlWindow *this_ptr = reinterpret_cast<WlWindow *>(data);
 
-bool WlWindow::IsVisible() const noexcept {
-  // TODO: Implement
-  return false;
+  this_ptr->CallCloseCallback();
 }
 
 }  // namespace graphics::wayland

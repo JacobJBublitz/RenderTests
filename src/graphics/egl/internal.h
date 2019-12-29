@@ -4,9 +4,26 @@
 
 #include "util/library.h"
 
-namespace graphics::egl {
+namespace graphics::egl::internal {
 
-namespace consts {
+// EGL 1.0
+using Boolean = unsigned int;
+class Config;
+class Context;
+class Display;
+class Surface;
+
+// EGL 1.2
+class ClientBuffer;
+using Enum = unsigned int;
+
+// EGL 1.5
+using Attrib = intptr_t;
+class Image;
+class Sync;
+using Time = uint64_t;
+
+inline namespace consts {
 
 // EGL 1.0
 constexpr unsigned int kAlphaSize = 0x3021;
@@ -31,7 +48,7 @@ constexpr unsigned int kDepthSize = 0x3025;
 constexpr int32_t kDontCare = -1;
 constexpr unsigned int kDraw = 0x3059;
 constexpr unsigned int kExtensions = 0x3055;
-constexpr unsigned int kFalse = 0;
+constexpr Boolean kFalse = 0;
 constexpr unsigned int kGreenSize = 0x3023;
 constexpr unsigned int kHeight = 0x3056;
 constexpr unsigned int kLargestPbuffer = 0x3058;
@@ -45,9 +62,9 @@ constexpr unsigned int kNativeVisualType = 0x302F;
 constexpr unsigned int kNone = 0x3038;
 constexpr unsigned int kNonConformantConfig = 0x3051;
 constexpr unsigned int kNotInitialized = 0x3001;
-constexpr void *kNoContext = nullptr;
-constexpr void *kNoDisplay = nullptr;
-constexpr void *kNoSurface = nullptr;
+constexpr Context *kNoContext = nullptr;
+constexpr Display *kNoDisplay = nullptr;
+constexpr Surface *kNoSurface = nullptr;
 constexpr unsigned int kPbufferBit = 0x0001;
 constexpr unsigned int kPixmapBit = 0x0002;
 constexpr unsigned int kRead = 0x305A;
@@ -63,7 +80,7 @@ constexpr unsigned int kTransparentGreenValue = 0x3036;
 constexpr unsigned int kTransparentRedValue = 0x3037;
 constexpr unsigned int kTransparentRgb = 0x3052;
 constexpr unsigned int kTransparentType = 0x3034;
-constexpr unsigned int kTrue = 1;
+constexpr Boolean kTrue = 1;
 constexpr unsigned int kVendor = 0x3053;
 constexpr unsigned int kVersion = 0x3054;
 constexpr unsigned int kWidth = 0x3057;
@@ -131,7 +148,7 @@ constexpr unsigned int kVgColorspaceLinear = 0x308A;
 constexpr unsigned int kVgColorspaceLinearBit = 0x0020;
 
 // EGL 1.4
-constexpr void *kDefaultDisplay = nullptr;
+constexpr Display *kDefaultDisplay = nullptr;
 constexpr unsigned int kMultisampleResolveBoxBit = 0x0200;
 constexpr unsigned int kMultisampleResolve = 0x3099;
 constexpr unsigned int kMultisampleResolveDefault = 0x309A;
@@ -166,7 +183,7 @@ constexpr unsigned int kSyncFlushCommandsBit = 0x0001;
 constexpr unsigned long long kForever = 0xFFFFFFFFFFFFFFFFull;
 constexpr unsigned int kTimeoutExpired = 0x30F5;
 constexpr unsigned int kConditionSatisfied = 0x30F6;
-constexpr void *kNoSync = nullptr;
+constexpr Sync *kNoSync = nullptr;
 constexpr unsigned int kSyncFence = 0x30F9;
 constexpr unsigned int kGlColorSpace = 0x309D;
 constexpr unsigned int kGlColorspaceSrgb = 0x3089;
@@ -183,13 +200,13 @@ constexpr unsigned int kGlTextureCubeMapNegativeY = 0x30B6;
 constexpr unsigned int kGlTextureCubeMapPositiveZ = 0x30B7;
 constexpr unsigned int kGlTextureCubeMapNegativeZ = 0x30B8;
 constexpr unsigned int kImagePreserved = 0x30D2;
-constexpr void *kNoImage = nullptr;
+constexpr Image *kNoImage = nullptr;
 
 }  // namespace consts
 
-namespace functions {
+inline namespace functions {
 
-namespace names {
+inline namespace names {
 
 // EGL 1.0
 constexpr const char *ChooseConfigProcName = "eglChooseConfig";
@@ -251,7 +268,7 @@ constexpr const char *WaitSyncProcName = "eglWaitSync";
 
 }  // namespace names
 
-namespace types {
+inline namespace types {
 
 #if defined(_WIN32)
 #define EGL_APIENTRY __stdcall
@@ -260,104 +277,108 @@ namespace types {
 #endif
 
 // EGL 1.0
-using ChooseConfigProc = unsigned int(EGL_APIENTRY *)(
-    void *dpy, const int32_t *attrib_list, void **configs, int32_t config_size,
-    int32_t *num_config);
+using ChooseConfigProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                 const int32_t *attrib_list,
+                                                 Config **configs,
+                                                 int32_t config_size,
+                                                 int32_t *num_config);
 // using CopyBuffersProc = unsigned int(EGL_APIENTRY *)(
-//     void *dpy, void *surface, EGLNativePixmapType target);
-using CreateContextProc = void *(EGL_APIENTRY *)(void *dpy, void *config,
-                                                 void *share_context,
-                                                 const int32_t *attrib_list);
-using CreatePbufferSurfaceProc =
-    void *(EGL_APIENTRY *)(void *dpy, void *config, const int32_t *attrib_list);
+//     Display *dpy, Surface *surface, EGLNativePixmapType target);
+using CreateContextProc = Context *(EGL_APIENTRY *)(Display *dpy,
+                                                    Config *config,
+                                                    Context *share_context,
+                                                    const int32_t *attrib_list);
+using CreatePbufferSurfaceProc = Surface *(
+    EGL_APIENTRY *)(Display *dpy, Config *config, const int32_t *attrib_list);
 // using CreatePixmapSurfaceProc =
-//     void *(EGL_APIENTRY *)(void *dpy, void *config, EGLNativePixmapType
-//     pixmap,
-//                            const int32_t *attrib_list);
+//     void *(EGL_APIENTRY *)(Display *dpy, Config *config, EGLNativePixmapType
+//     pixmap, const int32_t *attrib_list);
 // using CreateWindowSurfaceProc =
-//     void *(EGL_APIENTRY *)(void *dpy, void *config, EGLNativeWindowType win,
-//                            const int32_t *attrib_list);
-using DestroyContextProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *ctx);
-using DestroySurfaceProc = unsigned int(EGL_APIENTRY *)(void *dpy,
-                                                        void *surface);
-using GetConfigAttribProc = unsigned int(EGL_APIENTRY *)(void *dpy,
-                                                         void *config,
-                                                         int32_t attribute,
-                                                         int32_t *value);
-using GetConfigsProc = unsigned int(EGL_APIENTRY *)(void *dpy, void **configs,
-                                                    int32_t config_size,
-                                                    int32_t *num_config);
-using GetCurrentDisplayProc = void *(EGL_APIENTRY *)();
-using GetCurrentSurfaceProc = void *(EGL_APIENTRY *)(int32_t readdraw);
+//     void *(EGL_APIENTRY *)(Display *dpy, Config *config, EGLNativeWindowType
+//     win, const int32_t *attrib_list);
+using DestroyContextProc = Boolean(EGL_APIENTRY *)(Display *dpy, Context *ctx);
+using DestroySurfaceProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                   Surface *surface);
+using GetConfigAttribProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                    Config *config,
+                                                    int32_t attribute,
+                                                    int32_t *value);
+using GetConfigsProc = Boolean(EGL_APIENTRY *)(Display *dpy, Config **configs,
+                                               int32_t config_size,
+                                               int32_t *num_config);
+using GetCurrentDisplayProc = Display *(EGL_APIENTRY *)();
+using GetCurrentSurfaceProc = Surface *(EGL_APIENTRY *)(int32_t readdraw);
 // using GetDisplayProc = void *(EGL_APIENTRY *)(EGLNativeDisplayType
 // display_id);
 using GetErrorProc = int32_t(EGL_APIENTRY *)();
 using GetProcAddressProc = uintptr_t(EGL_APIENTRY *)(const char *procname);
-using InitializeProc = unsigned int(EGL_APIENTRY *)(void *dpy, int32_t *major,
-                                                    int32_t *minor);
-using MakeCurrentProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *draw,
-                                                     void *read, void *ctx);
-using QueryContextProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *ctx,
-                                                      int32_t attribute,
-                                                      int32_t *value);
-using QueryStringProc = const char *(EGL_APIENTRY *)(void *dpy, int32_t name);
-using QuerySurfaceProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *surface,
-                                                      int32_t attribute,
-                                                      int32_t *value);
-using SwapBuffersProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *surface);
-using TerminateProc = unsigned int(EGL_APIENTRY *)(void *dpy);
-using WaitGlProc = unsigned int(EGL_APIENTRY *)();
-using WaitNativeProc = unsigned int(EGL_APIENTRY *)(int32_t engine);
+using InitializeProc = Boolean(EGL_APIENTRY *)(Display *dpy, int32_t *major,
+                                               int32_t *minor);
+using MakeCurrentProc = Boolean(EGL_APIENTRY *)(Display *dpy, Surface *draw,
+                                                Surface *read, Context *ctx);
+using QueryContextProc = Boolean(EGL_APIENTRY *)(Display *dpy, Context *ctx,
+                                                 int32_t attribute,
+                                                 int32_t *value);
+using QueryStringProc = const char *(EGL_APIENTRY *)(Display *dpy,
+                                                     int32_t name);
+using QuerySurfaceProc = Boolean(EGL_APIENTRY *)(Display *dpy, Surface *surface,
+                                                 int32_t attribute,
+                                                 int32_t *value);
+using SwapBuffersProc = Boolean(EGL_APIENTRY *)(Display *dpy, Surface *surface);
+using TerminateProc = Boolean(EGL_APIENTRY *)(Display *dpy);
+using WaitGlProc = Boolean(EGL_APIENTRY *)();
+using WaitNativeProc = Boolean(EGL_APIENTRY *)(int32_t engine);
 
 // EGL 1.1
-using BindTexImageProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *surface,
-                                                      int32_t buffer);
-using ReleaseTexImageProc = unsigned int(EGL_APIENTRY *)(void *dpy,
-                                                         void *surface,
-                                                         int32_t buffer);
-using SurfaceAttribProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *surface,
-                                                       int32_t attribute,
-                                                       int32_t value);
-using SwapIntervalProc = unsigned int(EGL_APIENTRY *)(void *dpy,
-                                                      int32_t interval);
+using BindTexImageProc = Boolean(EGL_APIENTRY *)(Display *dpy, Surface *surface,
+                                                 int32_t buffer);
+using ReleaseTexImageProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                    Surface *surface,
+                                                    int32_t buffer);
+using SurfaceAttribProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                  Surface *surface,
+                                                  int32_t attribute,
+                                                  int32_t value);
+using SwapIntervalProc = Boolean(EGL_APIENTRY *)(Display *dpy,
+                                                 int32_t interval);
 
 // EGL 1.2
-using BindApiProc = unsigned int(EGL_APIENTRY *)(unsigned int api);
-using QueryApiProc = unsigned int(EGL_APIENTRY *)();
+using BindApiProc = Boolean(EGL_APIENTRY *)(Enum api);
+using QueryApiProc = Enum(EGL_APIENTRY *)();
 using CreatePbufferFromClientBufferProc =
-    void *(EGL_APIENTRY *)(void *dpy, unsigned int buftype, void *buffer,
-                           void *config, const int32_t *attrib_list);
-using ReleaseThreadProc = unsigned int(EGL_APIENTRY *)();
-using WaitClientProc = unsigned int(EGL_APIENTRY *)();
+    Surface *(EGL_APIENTRY *)(Display *dpy, Enum buftype, ClientBuffer *buffer,
+                              Config *config, const int32_t *attrib_list);
+using ReleaseThreadProc = Boolean(EGL_APIENTRY *)();
+using WaitClientProc = Boolean(EGL_APIENTRY *)();
 
 // EGL 1.4
-using GetCurrentContextProc = void *(EGL_APIENTRY *)();
+using GetCurrentContextProc = Context *(EGL_APIENTRY *)();
 
 // EGL 1.5
-using CreateSyncProc = void *(EGL_APIENTRY *)(void *dpy, unsigned int type,
-                                              const intptr_t *attrib_list);
-using DestroySyncProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *sync);
-using ClientWaitSyncProc = int(EGL_APIENTRY *)(void *dpy, void *sync,
-                                               int32_t flags, uint64_t timeout);
-using GetSyncAttribProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *sync,
-                                                       int32_t attribute,
-                                                       intptr_t *value);
-using CreateImageProc = void *(EGL_APIENTRY *)(void *dpy, void *ctx,
-                                               unsigned int target,
-                                               void *buffer,
-                                               const intptr_t *attrib_list);
-using DestroyImageProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *image);
+using CreateSyncProc = Sync *(EGL_APIENTRY *)(Display *dpy, Enum type,
+                                              const Attrib *attrib_list);
+using DestroySyncProc = Boolean(EGL_APIENTRY *)(Display *dpy, Sync *sync);
+using ClientWaitSyncProc = int32_t(EGL_APIENTRY *)(Display *dpy, Sync *sync,
+                                                   int32_t flags, Time timeout);
+using GetSyncAttribProc = Boolean(EGL_APIENTRY *)(Display *dpy, Sync *sync,
+                                                  int32_t attribute,
+                                                  Attrib *value);
+using CreateImageProc = Image *(EGL_APIENTRY *)(Display *dpy, Context *ctx,
+                                                Enum target,
+                                                ClientBuffer *buffer,
+                                                const Attrib *attrib_list);
+using DestroyImageProc = Boolean(EGL_APIENTRY *)(Display *dpy, Image *image);
 using GetPlatformDisplayProc =
-    void *(EGL_APIENTRY *)(unsigned int platform, void *native_display,
-                           const intptr_t *attrib_list);
+    Display *(EGL_APIENTRY *)(Enum platform, void *native_display,
+                              const Attrib *attrib_list);
 using CreatePlatformWindowSurfaceProc =
-    void *(EGL_APIENTRY *)(void *dpy, void *config, void *native_window,
-                           const intptr_t *attrib_list);
+    Surface *(EGL_APIENTRY *)(Display *dpy, Config *config, void *native_window,
+                              const Attrib *attrib_list);
 using CreatePlatformPixmapSurfaceProc =
-    void *(EGL_APIENTRY *)(void *dpy, void *config, void *native_pixmap,
-                           const intptr_t *attrib_list);
-using WaitSyncProc = unsigned int(EGL_APIENTRY *)(void *dpy, void *sync,
-                                                  int32_t flags);
+    Surface *(EGL_APIENTRY *)(Display *dpy, Config *config, void *native_pixmap,
+                              const Attrib *attrib_list);
+using WaitSyncProc = Boolean(EGL_APIENTRY *)(Display *dpy, Sync *sync,
+                                             int32_t flags);
 
 #undef EGL_APIENTRY
 
@@ -466,4 +487,4 @@ constexpr unsigned int PlatformX11ScreenKhr = 0x31D6;
 
 void LoadFunctions(util::Library &library);
 
-}  // namespace graphics::egl
+}  // namespace graphics::egl::internal

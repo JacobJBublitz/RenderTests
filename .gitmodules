@@ -13,3 +13,6 @@
 [submodule "third_party/wayland-protocols"]
 	path = third_party/wayland-protocols
 	url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
+[submodule "third_party/glog"]
+	path = third_party/glog
+	url = https://github.com/google/glog.git

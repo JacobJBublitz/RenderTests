@@ -33,8 +33,8 @@ class EglWindow final {
   int attached_height_;
 
   void *driver_private_;
-  void (*resize_callback_)(EglWindow *, void *);
-  void (*destroy_window_callback_)(void *);
+  void (*resize_callback_)(EglWindow *, void *) = nullptr;
+  void (*destroy_window_callback_)(void *) = nullptr;
 
   Surface *surface_;
 };

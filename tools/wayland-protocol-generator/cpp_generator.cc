@@ -310,6 +310,22 @@ void CppGenerator::MakeEnumDefinition(std::ostream &out,
         << entry.GetValue() << ",\n";
   }
   out << "};\n";
+
+  if (e.IsBitfield()) {
+    // If the enum is a bitfield add bitwise 'and' and 'or' operators
+    out << fmt::format(
+        "inline bool operator&({0} a, {0} b) noexcept {{\n"
+        "  return (static_cast<uint32_t>(a) & "
+        "static_cast<uint32_t>(b)) != 0;\n"
+        "}}\n",
+        FormatEnumType(interface, e));
+    out << fmt::format(
+        "inline {0} operator|({0} a, {0} b) noexcept {{\n"
+        "  return static_cast<{0}>(static_cast<uint32_t>(a) | "
+        "static_cast<uint32_t>(b));\n"
+        "}}\n",
+        FormatEnumType(interface, e));
+  }
 }
 
 void CppGenerator::MakeInterfaceClassDefinition(

@@ -17,7 +17,7 @@ add_subdirectory(tools/wayland-protocol-generator)
 add_subdirectory(src)
 
 add_executable(RenderTests ${SOURCES})
-target_link_libraries(RenderTests PUBLIC dl fmt glog ${LINK_LIBRARIES})
+target_link_libraries(RenderTests PUBLIC dl fmt gflags glog GL ${LINK_LIBRARIES})
 target_include_directories(RenderTests PRIVATE src)
 set_target_properties(RenderTests PROPERTIES
                       CXX_STANDARD 17

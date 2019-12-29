@@ -104,11 +104,6 @@ WlDisplay WlDisplay::ConnectToFileDescriptor(int fd) {
   return WlDisplay(handle);
 }
 
-Window *WlDisplay::CreateWindow(const std::string &title, uint32_t width,
-                                uint32_t height) {
-  return new WlWindow(*this, title, width, height);
-}
-
 void WlDisplay::HandleEvents() {
   pollfd fds[] = {
       {handle_->GetFd(), POLLIN, 0},

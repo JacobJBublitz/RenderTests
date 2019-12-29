@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graphics/egl/native_display.h"
+#include "graphics/egl/display.h"
 #include "graphics/wayland/internal/wayland.h"
 #include "graphics/wayland/internal/xdg_decoration_unstable_v1.h"
 #include "graphics/wayland/internal/xdg_shell.h"
@@ -17,9 +17,6 @@ class WlDisplay final : public Display, public egl::EglNativeDisplay {
   static WlDisplay Connect(const std::string &name);
   static WlDisplay ConnectToDefault();
   static WlDisplay ConnectToFileDescriptor(int fd);
-
-  Window *CreateWindow(const std::string &title, uint32_t width,
-                       uint32_t height) final;
 
   void HandleEvents() final;
 

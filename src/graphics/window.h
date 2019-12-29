@@ -13,9 +13,6 @@ class Display {
  public:
   virtual ~Display();
 
-  virtual Window *CreateWindow(const std::string &title, uint32_t width,
-                               uint32_t height) = 0;
-
   virtual void HandleEvents() = 0;
 };
 

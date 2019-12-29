@@ -35,12 +35,6 @@ WlSurface::WlSurface(internal::Surface *handle) : handle_(handle) {
 
 WlSurface::~WlSurface() { handle_->Destroy(); }
 
-egl::internal::Surface *WlSurface::CreateEglSurface(
-    egl::internal::Display *display, egl::internal::Config *config) {
-  return egl::internal::CreatePlatformWindowSurface(display, config, handle_,
-                                                    nullptr);
-}
-
 void WlSurface::HandlePointerMotion(uint32_t time, double x, double y) {
   LOG(INFO) << "X: " << x << ", Y: " << y;
 }
@@ -65,30 +59,31 @@ WlWindow::WlWindow(WlDisplay &display, const std::string &title, uint32_t width,
   xdg_toplevel_->AddListener(XdgToplevelListener, this);
   xdg_toplevel_->SetTitle(title.c_str());
 
-  framebuffer_mem_ = std::make_unique<posix::SharedMemory>(width * height * 4);
+  // framebuffer_mem_ = std::make_unique<posix::SharedMemory>(width * height *
+  // 4);
 
-  fb_pool_ = display.GetShm()->CreatePool(framebuffer_mem_->GetFd(),
-                                          framebuffer_mem_->GetSize());
-  framebuffer_ = fb_pool_->CreateBuffer(0, width, height, width * 4,
-                                        internal::ShmFormat::kXrgb8888);
+  // fb_pool_ = display.GetShm()->CreatePool(framebuffer_mem_->GetFd(),
+  //                                          framebuffer_mem_->GetSize());
+  // framebuffer_ = fb_pool_->CreateBuffer(0, width, height, width * 4,
+  //                                       internal::ShmFormat::kXrgb8888);
 
-  for (auto i = 0u; i < height; i++) {
-    uint32_t val = rand();
-    for (auto j = 0u; j < width; j++)
-      reinterpret_cast<uint32_t *>(
-          framebuffer_mem_->GetPointer())[i * width + j] = val;
-  }
+  // for (auto i = 0u; i < height; i++) {
+  //   uint32_t val = rand();
+  //   for (auto j = 0u; j < width; j++)
+  //     reinterpret_cast<uint32_t *>(
+  //         framebuffer_mem_->GetPointer())[i * width + j] = val;
+  // }
 
-  GetSurfaceHandle()->Attach(framebuffer_, 0, 0);
-  GetSurfaceHandle()->Commit();
+  // GetSurfaceHandle()->Attach(framebuffer_, 0, 0);
+  // GetSurfaceHandle()->Commit();
 }
 
 WlWindow::~WlWindow() {
   xdg_toplevel_->Destroy();
   xdg_surface_->Destroy();
 
-  framebuffer_->Destroy();
-  fb_pool_->Destroy();
+  // framebuffer_->Destroy();
+  // fb_pool_->Destroy();
 }
 
 void WlWindow::SetPosition(int32_t x, int32_t y) {

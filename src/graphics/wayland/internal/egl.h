@@ -24,19 +24,19 @@ class EglWindow final {
  private:
   const intptr_t version_;
 
-  int width_;
-  int height_;
-  int dx_;
-  int dy_;
+  int width_ = 0;
+  int height_ = 0;
+  int dx_ = 0;
+  int dy_ = 0;
 
-  int attached_width_;
-  int attached_height_;
+  int attached_width_ = 0;
+  int attached_height_ = 0;
 
-  void *driver_private_;
+  void *driver_private_ = nullptr;
   void (*resize_callback_)(EglWindow *, void *) = nullptr;
   void (*destroy_window_callback_)(void *) = nullptr;
 
-  Surface *surface_;
+  Surface *surface_ = nullptr;
 };
 static_assert(sizeof(EglWindow) == sizeof(intptr_t) + sizeof(int) * 6 +
                                        sizeof(void *) + sizeof(void (*)()) * 2 +

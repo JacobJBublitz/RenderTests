@@ -3,7 +3,7 @@
 #include <list>
 #include <memory>
 
-#include "graphics/egl/native_window.h"
+#include "graphics/egl/surface.h"
 #include "graphics/wayland/display.h"
 #include "graphics/wayland/internal/egl.h"
 #include "graphics/window.h"
@@ -11,16 +11,13 @@
 
 namespace graphics::wayland {
 
-class WlSurface : public egl::EglNativeWindow {
+class WlSurface {
  public:
   WlSurface(internal::Compositor *compositor)
       : WlSurface(compositor->CreateSurface()) {}
   WlSurface(internal::Surface *handle);
   WlSurface(const WlSurface &) = delete;  // No copy
   virtual ~WlSurface();
-
-  egl::internal::Surface *CreateEglSurface(
-      egl::internal::Display *display, egl::internal::Config *config) override;
 
   virtual void HandlePointerMotion(uint32_t time, double x, double y);
 
@@ -34,11 +31,15 @@ class WlSurface : public egl::EglNativeWindow {
   std::list<internal::Output *> outputs_;
 };
 
-class WlWindow : public Window, public WlSurface {
+class WlWindow : public Window, public WlSurface, public egl::EglNativeWindow {
  public:
   WlWindow(WlDisplay &display, const std::string &title, uint32_t width,
            uint32_t height);
   ~WlWindow();
+
+  void *GetEglNativeWindowHandle() override { return &egl_surface_; }
+  void PopulateEglAttribList(
+      std::vector<egl::internal::Attrib> &attrib_list) override {}
 
   void SetPosition(int32_t x, int32_t y) final;
   void GetPosition(int32_t &x, int32_t &y) const noexcept final;

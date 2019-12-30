@@ -1,6 +1,8 @@
 list(APPEND SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/display.cc"
      "${CMAKE_CURRENT_SOURCE_DIR}/display.h"
+     "${CMAKE_CURRENT_SOURCE_DIR}/monitor.cc"
+     "${CMAKE_CURRENT_SOURCE_DIR}/monitor.h"
      "${CMAKE_CURRENT_SOURCE_DIR}/window.cc"
      "${CMAKE_CURRENT_SOURCE_DIR}/window.h"
 )

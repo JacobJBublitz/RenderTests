@@ -1,9 +1,12 @@
 #pragma once
 
+#include <list>
+
 #include "graphics/egl/display.h"
 #include "graphics/wayland/internal/wayland.h"
 #include "graphics/wayland/internal/xdg_decoration_unstable_v1.h"
 #include "graphics/wayland/internal/xdg_shell.h"
+#include "graphics/wayland/monitor.h"
 #include "graphics/window.h"
 
 namespace graphics::wayland {
@@ -27,6 +30,8 @@ class WlDisplay final : public Display, public egl::EglNativeDisplay {
   void PopulateEglAttribList(
       std::vector<egl::internal::Attrib> &attrib_list) final {}
 
+  const std::list<WlMonitor> &GetMonitors() noexcept { return monitors_; }
+
   internal::Compositor *GetCompositor() noexcept { return compositor_; }
 
   internal::Shell *GetShell() noexcept { return shell_; }
@@ -41,9 +46,7 @@ class WlDisplay final : public Display, public egl::EglNativeDisplay {
 
  private:
   static const internal::Pointer::Listener PointerListener;
-  static const internal::Registry::Listener RegistryListener;
   static const internal::Seat::Listener SeatListener;
-  static const internal::XdgWmBase::Listener XdgWmBaseListener;
 
   internal::Display *handle_ = nullptr;
   internal::Compositor *compositor_ = nullptr;
@@ -52,6 +55,8 @@ class WlDisplay final : public Display, public egl::EglNativeDisplay {
   internal::Seat *seat_ = nullptr;
   internal::XdgWmBase *xdg_wm_base_ = nullptr;
   internal::ZxdgDecorationManagerV1 *zxdg_decoration_manager_v1_ = nullptr;
+
+  std::list<WlMonitor> monitors_;
 
   internal::Pointer *pointer_ = nullptr;
   internal::Surface *pointer_focus_ = nullptr;
@@ -87,17 +92,10 @@ class WlDisplay final : public Display, public egl::EglNativeDisplay {
                                          internal::PointerAxis axis,
                                          int32_t discrete) noexcept;
 
-  static void RegistryGlobal(void *data, internal::Registry *registry,
-                             uint32_t name, const char *interface,
-                             uint32_t version) noexcept;
-  static void RegistryGlobalRemove(void *data, internal::Registry *registry,
-                                   uint32_t name) noexcept;
   static void SeatCapabilitiesHandler(void *data, internal::Seat *seat,
                                       internal::SeatCapability capabilities);
   static void SeatNameHandler(void *data, internal::Seat *seat,
                               const char *name);
-  static void XdgWmBasePing(void *data, internal::XdgWmBase *xdg_wm_base,
-                            uint32_t serial) noexcept;
 };
 
 }  // namespace graphics::wayland

@@ -16,3 +16,6 @@
 [submodule "third_party/glog"]
 	path = third_party/glog
 	url = https://github.com/google/glog.git
+[submodule "third_party/glbinding"]
+	path = third_party/glbinding
+	url = https://github.com/cginternals/glbinding.git

@@ -15,11 +15,7 @@ extern "C" {
 
 namespace graphics::wayland {
 
-namespace {
-
-struct PointerFrameState {};
-
-}  // namespace
+using namespace internal;
 
 const internal::Pointer::Listener WlDisplay::PointerListener{
     .Enter = PointerEnterHandler,
@@ -32,24 +28,60 @@ const internal::Pointer::Listener WlDisplay::PointerListener{
     .AxisStop = PointerAxisStopHandler,
     .AxisDiscrete = PointerAxisDiscreteHandler,
 };
-const internal::Registry::Listener WlDisplay::RegistryListener{
-    .Global = RegistryGlobal,
-    .GlobalRemove = RegistryGlobalRemove,
-};
 const internal::Seat::Listener WlDisplay::SeatListener{
     .Capabilities = SeatCapabilitiesHandler,
     .Name = SeatNameHandler,
 };
-const internal::XdgWmBase::Listener WlDisplay::XdgWmBaseListener{
-    .Ping = XdgWmBasePing,
-};
 
 WlDisplay::WlDisplay(internal::Display *handle) : handle_(handle) {
-  if (!handle) {
+  if (!handle_) {
     throw std::runtime_error("Invalid wayland display handle");
   }
-  internal::Registry *registry = handle->GetRegistry();
-  registry->AddListener(RegistryListener, this);
+  internal::Registry *registry = handle_->GetRegistry();
+  registry->AddListener(
+      {
+          .Global =
+              [](void *data, internal::Registry *registry, uint32_t name,
+                 const char *interface, uint32_t version) {
+                WlDisplay *this_ptr = reinterpret_cast<WlDisplay *>(data);
+                std::string interface_str = interface;
+
+                if (interface_str == CompositorInterface.Name) {
+                  this_ptr->compositor_ = reinterpret_cast<Compositor *>(
+                      registry->Bind(name, &CompositorInterface, version));
+                // } else if (interface_str == OutputInterface.Name) {
+                //   this_ptr->monitors_.emplace_back(reinterpret_cast<Output *>(
+                //       registry->Bind(name, &OutputInterface, version)));
+                } else if (interface_str == ShellInterface.Name) {
+                  this_ptr->shell_ = reinterpret_cast<Shell *>(
+                      registry->Bind(name, &ShellInterface, version));
+                } else if (interface_str == ShmInterface.Name) {
+                  this_ptr->shm_ = reinterpret_cast<Shm *>(
+                      registry->Bind(name, &ShmInterface, version));
+                } else if (interface_str == SeatInterface.Name) {
+                  this_ptr->seat_ = reinterpret_cast<Seat *>(
+                      registry->Bind(name, &SeatInterface, version));
+                } else if (interface_str == XdgWmBaseInterface.Name) {
+                  this_ptr->xdg_wm_base_ = reinterpret_cast<XdgWmBase *>(
+                      registry->Bind(name, &XdgWmBaseInterface, version));
+                  this_ptr->xdg_wm_base_->AddListener(
+                      {.Ping =
+                           [](void *, XdgWmBase *xdg_wm_base, uint32_t serial) {
+                             xdg_wm_base->Pong(serial);
+                           }},
+                      nullptr);
+                } else if (interface_str ==
+                           ZxdgDecorationManagerV1Interface.Name) {
+                  this_ptr->zxdg_decoration_manager_v1_ =
+                      reinterpret_cast<ZxdgDecorationManagerV1 *>(
+                          registry->Bind(name,
+                                         &ZxdgDecorationManagerV1Interface,
+                                         version));
+                }
+              },
+          .GlobalRemove = [](void *, internal::Registry *, uint32_t) {},
+      },
+      this);
   handle_->Dispatch();
   handle_->Roundtrip();
   registry->Destroy();
@@ -72,6 +104,7 @@ WlDisplay::WlDisplay(internal::Display *handle) : handle_(handle) {
       << internal::ZxdgDecorationManagerV1Interface.Name
       << "' was not found. Window decorations will be done on the "
          "client side\n";
+  LOG(INFO) << "Found " << monitors_.size() << " displays";
 }
 
 WlDisplay::~WlDisplay() {
@@ -175,38 +208,6 @@ void WlDisplay::PointerAxisDiscreteHandler(void *data,
                                            internal::PointerAxis axis,
                                            int32_t discrete) noexcept {}
 
-void WlDisplay::RegistryGlobal(void *data, internal::Registry *registry,
-                               uint32_t name, const char *interface,
-                               uint32_t version) noexcept {
-  WlDisplay *this_ptr = reinterpret_cast<WlDisplay *>(data);
-
-  if (strcmp(interface, internal::CompositorInterface.Name) == 0)
-    this_ptr->compositor_ = reinterpret_cast<internal::Compositor *>(
-        registry->Bind(name, &internal::CompositorInterface, version));
-  else if (strcmp(interface, internal::ShellInterface.Name) == 0)
-    this_ptr->shell_ = reinterpret_cast<internal::Shell *>(
-        registry->Bind(name, &internal::ShellInterface, version));
-  else if (strcmp(interface, internal::ShmInterface.Name) == 0)
-    this_ptr->shm_ = reinterpret_cast<internal::Shm *>(
-        registry->Bind(name, &internal::ShmInterface, version));
-  else if (strcmp(interface, internal::SeatInterface.Name) == 0) {
-    this_ptr->seat_ = reinterpret_cast<internal::Seat *>(
-        registry->Bind(name, &internal::SeatInterface, version));
-    this_ptr->seat_->AddListener(SeatListener, this_ptr);
-  } else if (strcmp(interface, internal::XdgWmBaseInterface.Name) == 0) {
-    this_ptr->xdg_wm_base_ = reinterpret_cast<internal::XdgWmBase *>(
-        registry->Bind(name, &internal::XdgWmBaseInterface, version));
-    this_ptr->xdg_wm_base_->AddListener(XdgWmBaseListener, this_ptr);
-  } else if (strcmp(interface,
-                    internal::ZxdgDecorationManagerV1Interface.Name) == 0)
-    this_ptr->zxdg_decoration_manager_v1_ =
-        reinterpret_cast<internal::ZxdgDecorationManagerV1 *>(registry->Bind(
-            name, &internal::ZxdgDecorationManagerV1Interface, version));
-}
-
-void WlDisplay::RegistryGlobalRemove(void *data, internal::Registry *registry,
-                                     uint32_t name) noexcept {}
-
 void WlDisplay::SeatCapabilitiesHandler(void *data, internal::Seat *seat,
                                         internal::SeatCapability capabilities) {
   WlDisplay *this_ptr = reinterpret_cast<WlDisplay *>(data);
@@ -224,10 +225,5 @@ void WlDisplay::SeatCapabilitiesHandler(void *data, internal::Seat *seat,
 
 void WlDisplay::SeatNameHandler(void *data, internal::Seat *seat,
                                 const char *name) {}
-
-void WlDisplay::XdgWmBasePing(void *data, internal::XdgWmBase *xdg_wm_base,
-                              uint32_t serial) noexcept {
-  xdg_wm_base->Pong(serial);
-}
 
 }  // namespace graphics::wayland

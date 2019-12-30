@@ -1,5 +1,7 @@
 
 #include <gflags/gflags.h>
+#include <glbinding/gl45core/gl.h>
+#include <glbinding/glbinding.h>
 #include <glog/logging.h>
 
 #include <iostream>
@@ -10,10 +12,6 @@
 #include "graphics/egl/surface.h"
 #include "graphics/wayland/display.h"
 #include "graphics/wayland/window.h"
-
-extern "C" {
-#include <GL/gl.h>
-}
 
 namespace {
 
@@ -43,8 +41,13 @@ int main(int argc, char *argv[]) {
 
   egl_context.MakeCurrent();
 
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glbinding::initialize([&egl_context](const char *name) {
+    return egl_context.GetProcAddress(name);
+  });
+
+  gl45core::glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+  gl45core::glClear(gl45core::GL_COLOR_BUFFER_BIT |
+                    gl45core::GL_DEPTH_BUFFER_BIT);
 
   egl_context.SwapBuffers();
 

@@ -1,0 +1,13 @@
+diff --git a/src/wayland-os.c b/src/wayland-os.c
+index 93b6f5fc..f4f25e15 100644
+--- src/wayland-os.c
++++ src/wayland-os.c
+@@ -32,7 +32,7 @@
+ #include <errno.h>
+ #include <sys/epoll.h>
+ 
+-#include "../config.h"
++#include "config.h"
+ #include "wayland-os.h"
+ 
+ static int

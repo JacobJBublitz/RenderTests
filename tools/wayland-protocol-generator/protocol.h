@@ -1,10 +1,10 @@
 #pragma once
 
-#include <tinyxml2.h>
-
 #include <list>
 #include <optional>
 #include <string>
+
+#include "tinyxml2.h"
 
 class Argument final {
  public:

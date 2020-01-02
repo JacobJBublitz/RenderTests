@@ -1,23 +1,23 @@
-#include <tinyxml2.h>
-
 #include <iostream>
 #include <memory>
 
-#include "cpp_generator.h"
-#include "protocol.h"
+#include "gflags/gflags.h"
+#include "tinyxml2.h"
+#include "tools/wayland-protocol-generator/cpp_generator.h"
+#include "tools/wayland-protocol-generator/protocol.h"
 
 namespace {
 
-std::string ProtocolFileName;
-std::string OutputFileName;
-
 void PrintUsage(const char *invocation) {
-  std::cout << "Usage: " << invocation << " <protocol file> [supporting protocols...]\n";
+  std::cout << "Usage: " << invocation
+            << " <protocol file> [supporting protocols...]\n";
 }
 
 }  // namespace
 
-int main(int argc, const char **argv) {
+int main(int argc, char *argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   if (argc < 2) {
     PrintUsage(argv[0]);
     return 1;

@@ -1,12 +1,16 @@
 #include "cpp_generator.h"
 
-#include <fmt/format.h>
-
 #include <fstream>
 #include <iostream>
 #include <locale>
 #include <sstream>
 #include <vector>
+
+#include "fmt/format.h"
+#include "gflags/gflags.h"
+
+DEFINE_string(cxx_source, "protocol.cc", "C++ source file output path");
+DEFINE_string(cxx_header, "protocol.h", "C++ header file output path");
 
 namespace {
 
@@ -183,13 +187,15 @@ std::string CppGenerator::FormatInterfaceValue(
 }
 
 void CppGenerator::Generate(const Protocol &protocol) {
-  std::ofstream header_output_stream{
-      fmt::format("{0}.{1}", protocol.Name, header_extension_)};
+  std::ofstream header_output_stream{FLAGS_cxx_header};
   GenerateHeader(header_output_stream, protocol);
 
-  std::ofstream source_output_stream{
-      fmt::format("{0}.{1}", protocol.Name, source_extension_)};
-  GenerateSource(source_output_stream, protocol);
+  std::string base_header_name = FLAGS_cxx_header;
+  if (auto pos = FLAGS_cxx_header.find_last_of('/'); pos != std::string::npos)
+    base_header_name = FLAGS_cxx_header.substr(pos + 1);
+
+  std::ofstream source_output_stream{FLAGS_cxx_source};
+  GenerateSource(source_output_stream, base_header_name, protocol);
 }
 
 std::string CppGenerator::FormatRequestName(
@@ -222,8 +228,8 @@ void CppGenerator::GenerateHeader(std::ostream &out, const Protocol &protocol) {
       << "\n"
       << "#include <cstdint>\n"
       << "\n"
-      << "#include \"graphics/wayland/internal/core.h\"\n"
-      << "#include \"graphics/wayland/internal/util.h\"\n"
+      << "#include \"engine/graphics/wayland/internal/core.h\"\n"
+      << "#include \"engine/graphics/wayland/internal/util.h\"\n"
       << "\n";
 
   for (auto &inc : additional_includes_) {
@@ -241,13 +247,15 @@ void CppGenerator::GenerateHeader(std::ostream &out, const Protocol &protocol) {
   out << "\n}  // namespace " << root_namespace_ << "\n";
 }
 
-void CppGenerator::GenerateSource(std::ostream &out, const Protocol &protocol) {
+void CppGenerator::GenerateSource(std::ostream &out,
+                                  const std::string &header_base_name,
+                                  const Protocol &protocol) {
   std::stringstream interface_definitions;
 
   for (auto &interface : protocol.Interfaces)
     MakeInterfaceValueDefinition(interface_definitions, interface);
 
-  out << "#include \"" << protocol.Name << "." << header_extension_ << "\"\n"
+  out << "#include \"" << header_base_name << "\"\n"
       << "\n"
       << "namespace " << root_namespace_ << " {\n"
       << "\n"

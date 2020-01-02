@@ -1,24 +1,26 @@
 #include "protocol.h"
 
-#include <fmt/format.h>
-
 #include <cstring>
 #include <initializer_list>
 #include <iostream>
+
+#include "fmt/format.h"
 
 using namespace tinyxml2;
 
 namespace {
 
 const std::list<std::pair<Argument::Type, const char *>> ArgumentTypeStringMap =
-    {std::pair{Argument::Type::kArray, "array"},
-     std::pair{Argument::Type::kFd, "fd"},
-     std::pair{Argument::Type::kFixed, "fixed"},
-     std::pair{Argument::Type::kInt, "int"},
-     std::pair{Argument::Type::kNewId, "new_id"},
-     std::pair{Argument::Type::kObject, "object"},
-     std::pair{Argument::Type::kString, "string"},
-     std::pair{Argument::Type::kUint, "uint"}};
+    {
+        std::pair{Argument::Type::kArray, "array"},
+        std::pair{Argument::Type::kFd, "fd"},
+        std::pair{Argument::Type::kFixed, "fixed"},
+        std::pair{Argument::Type::kInt, "int"},
+        std::pair{Argument::Type::kNewId, "new_id"},
+        std::pair{Argument::Type::kObject, "object"},
+        std::pair{Argument::Type::kString, "string"},
+        std::pair{Argument::Type::kUint, "uint"},
+};
 
 const std::list<std::pair<Request::Type, const char *>> RequestTypeStringMap = {
     std::pair{Request::Type::kDestructor, "destructor"},

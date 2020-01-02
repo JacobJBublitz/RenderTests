@@ -21,9 +21,6 @@ class CppGenerator final : public Generator {
   std::optional<Interface> LookupInterface(const std::string &name) const;
 
  private:
-  std::string source_extension_ = "cc";
-  std::string header_extension_ = "h";
-
   std::string root_namespace_ = "graphics::wayland::internal";
 
   std::list<std::string> additional_includes_;
@@ -44,7 +41,8 @@ class CppGenerator final : public Generator {
                                 const Request &request) const;
 
   void GenerateHeader(std::ostream &out, const Protocol &protocol);
-  void GenerateSource(std::ostream &out, const Protocol &protocol);
+  void GenerateSource(std::ostream &out, const std::string &base_header_name,
+                      const Protocol &protocol);
 
   void MakeDocumentationBlock(std::ostream &out, const Description &desc,
                               size_t indentation = 0) const;

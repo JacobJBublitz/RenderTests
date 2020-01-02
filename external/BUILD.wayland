@@ -1,0 +1,93 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_binary")
+
+filegroup(
+    name = "base_protocol",
+    srcs = ["protocol/wayland.xml"],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "scanner",
+    srcs = ["src/scanner.c", "config.h"],
+    deps = [":wayland-util"],
+    linkopts = ["-lexpat"], # TODO: Build expat
+)
+
+genrule(
+    name = "generate_config",
+    srcs = [],
+    outs = ["config.h"],
+    cmd = "touch $(location config.h)",
+)
+
+genrule(
+    name = "generate_version",
+    srcs = ["src/wayland-version.h.in"],
+    outs = ["src/wayland-version.h"],
+    cmd = "sed " +
+    "-e 's/@WAYLAND_VERSION_MAJOR@/1/g' " +
+    "-e 's/@WAYLAND_VERSION_MINOR@/17/g' " +
+    "-e 's/@WAYLAND_VERSION_MICRO@/0/g' " +
+    "-e 's/@WAYLAND_VERSION@/1.17.0/g' " +
+    "$(location src/wayland-version.h.in) " +
+    "> $(location src/wayland-version.h)"
+)
+
+genrule(
+    name = "make_wayland_client_protocol",
+    srcs = ["protocol/wayland.xml"],
+    outs = [
+        "wayland-client-protocol.h"
+    ],
+    cmd = "$(location :scanner) " + 
+          "client-header " +
+          "$(location protocol/wayland.xml) " +
+          "$(location wayland-client-protocol.h)",
+    tools = [":scanner"],
+)
+
+genrule(
+    name = "make_wayland_protocol",
+    srcs = ["protocol/wayland.xml"],
+    outs = [
+        "wayland-protocol.c"
+    ],
+    cmd = "$(location :scanner) " + 
+          "code " +
+          "$(location protocol/wayland.xml) " +
+          "$(location wayland-protocol.c)",
+    tools = [":scanner"],
+)
+
+cc_library(
+    name = "wayland-util",
+    srcs = ["src/wayland-util.c", "src/wayland-private.h"],
+    hdrs = ["src/wayland-util.h"],
+)
+
+cc_library(
+    name = "wayland-private",
+    srcs = [
+        "src/connection.c",
+        "src/wayland-os.c",
+        "src/wayland-os.h",
+        "src/wayland-private.h",
+    ],
+    hdrs = [
+        "src/wayland-server.h",
+        "src/wayland-server-core.h",
+        "src/wayland-client.h",
+        "src/wayland-client-core.h",
+        "src/wayland-version.h",
+        "config.h",
+    ],
+    deps = ["@libffi", ":wayland-util"],
+)
+
+cc_library(
+    name = "wayland-client",
+    srcs=["src/wayland-client.c", "wayland-protocol.c"],
+    hdrs= ["wayland-client-protocol.h"],
+    deps = [":wayland-private", ":wayland-util"],
+    visibility = ["//visibility:public"],
+)

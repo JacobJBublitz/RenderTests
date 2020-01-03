@@ -11,7 +11,10 @@ cc_library(
 cc_library(
     name = "graphics",
     visibility = ["//visibility:public"],
-    deps = [":window"] + select({
+    deps = [
+        ":window",
+        "//engine/graphics/vulkan",
+    ] + select({
         "@//platforms:is_linux": ["//engine/graphics/wayland"],
         "@//platforms:is_windows": ["//engine/graphics/windows"],
     }),

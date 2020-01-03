@@ -13,6 +13,7 @@
 // #include "glbinding/glbinding.h"
 #include "glog/logging.h"
 
+#include "engine/graphics/vulkan/renderer.h"
 #include "engine/graphics/windows/window.h"
 
 namespace {
@@ -39,6 +40,8 @@ int main(int argc, char *argv[]) {
         engine::graphics::windows::WinWindow(display, "Voxel", 1080, 720);
     // auto window = graphics::wayland::WlWindow(display, "Voxel", 1080, 720);
     window.SetCloseCallback([]() { Running = false; });
+
+    engine::graphics::vulkan::VkRenderer renderer;
     // auto egl_surface = graphics::egl::EglSurface::FromNative(egl_display,
     // window);
 
@@ -58,10 +61,8 @@ int main(int argc, char *argv[]) {
 
     // egl_context.SwapBuffers();
 
-    while (Running) {
-      LOG(INFO) << "Events!";
-      display.HandleEvents();
-    }
+    while (Running) display.HandleEvents();
+
     // egl_context.MakeNoneCurrent();
   } catch (std::exception &e) {
     LOG(FATAL) << e.what();

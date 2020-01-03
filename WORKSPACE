@@ -57,6 +57,21 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "vulkan_headers",
+    build_file = "vulkan_headers/BUILD",
+    remote = "https://github.com/KhronosGroup/Vulkan-Headers.git",
+    tag = "v1.1.130",
+)
+
+new_git_repository(
+    name = "vulkan_loader",
+    build_file = "vulkan_loader/BUILD",
+    patches = ["vulkan_loader/fix_includes.patch"],
+    remote = "https://github.com/KhronosGroup/Vulkan-Loader.git",
+    tag = "v1.1.130",
+)
+
+new_git_repository(
     name = "wayland",
     build_file = "wayland/BUILD",
     patches = ["wayland/fix_includes.patch"],

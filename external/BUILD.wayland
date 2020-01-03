@@ -1,4 +1,5 @@
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 
 filegroup(
     name = "base_protocol",
@@ -8,9 +9,12 @@ filegroup(
 
 cc_binary(
     name = "scanner",
-    srcs = ["src/scanner.c", "config.h"],
+    srcs = [
+        "config.h",
+        "src/scanner.c",
+    ],
+    linkopts = ["-lexpat"],  # TODO: Build expat
     deps = [":wayland-util"],
-    linkopts = ["-lexpat"], # TODO: Build expat
 )
 
 genrule(
@@ -20,26 +24,30 @@ genrule(
     cmd = "touch $(location config.h)",
 )
 
-genrule(
+run_binary(
     name = "generate_version",
     srcs = ["src/wayland-version.h.in"],
-    outs = ["src/wayland-version.h"],
-    cmd = "sed " +
-    "-e 's/@WAYLAND_VERSION_MAJOR@/1/g' " +
-    "-e 's/@WAYLAND_VERSION_MINOR@/17/g' " +
-    "-e 's/@WAYLAND_VERSION_MICRO@/0/g' " +
-    "-e 's/@WAYLAND_VERSION@/1.17.0/g' " +
-    "$(location src/wayland-version.h.in) " +
-    "> $(location src/wayland-version.h)"
+    outs = ["wayland-version.h"],
+    args = [
+        "$(location src/wayland-version.h.in)",
+        "$(location wayland-version.h)"
+    ],
+    env = {
+        "WAYLAND_VERSION_MAJOR": "1",
+        "WAYLAND_VERSION_MINOR": "17",
+        "WAYLAND_VERSION_MICRO": "0",
+        "WAYLAND_VERSION": "1.17.0",
+    },
+    tool = "@//tools:header_config",
 )
 
 genrule(
     name = "make_wayland_client_protocol",
     srcs = ["protocol/wayland.xml"],
     outs = [
-        "wayland-client-protocol.h"
+        "wayland-client-protocol.h",
     ],
-    cmd = "$(location :scanner) " + 
+    cmd = "$(location :scanner) " +
           "client-header " +
           "$(location protocol/wayland.xml) " +
           "$(location wayland-client-protocol.h)",
@@ -50,9 +58,9 @@ genrule(
     name = "make_wayland_protocol",
     srcs = ["protocol/wayland.xml"],
     outs = [
-        "wayland-protocol.c"
+        "wayland-protocol.c",
     ],
-    cmd = "$(location :scanner) " + 
+    cmd = "$(location :scanner) " +
           "code " +
           "$(location protocol/wayland.xml) " +
           "$(location wayland-protocol.c)",
@@ -61,7 +69,12 @@ genrule(
 
 cc_library(
     name = "wayland-util",
-    srcs = ["src/wayland-util.c", "src/wayland-private.h"],
+    srcs = [
+        "src/wayland-private.h",
+        "src/wayland-util.c",
+        "src/wayland-server-core.h",
+        "wayland-version.h"
+    ],
     hdrs = ["src/wayland-util.h"],
 )
 
@@ -74,20 +87,29 @@ cc_library(
         "src/wayland-private.h",
     ],
     hdrs = [
-        "src/wayland-server.h",
-        "src/wayland-server-core.h",
+        "config.h",
         "src/wayland-client.h",
         "src/wayland-client-core.h",
-        "src/wayland-version.h",
-        "config.h",
+        "src/wayland-server.h",
+        "src/wayland-server-core.h",
+        "wayland-version.h",
     ],
-    deps = ["@libffi", ":wayland-util"],
+    deps = [
+        ":wayland-util",
+        "@libffi",
+    ],
 )
 
 cc_library(
     name = "wayland-client",
-    srcs=["src/wayland-client.c", "wayland-protocol.c"],
-    hdrs= ["wayland-client-protocol.h"],
-    deps = [":wayland-private", ":wayland-util"],
+    srcs = [
+        "src/wayland-client.c",
+        "wayland-protocol.c",
+    ],
+    hdrs = ["wayland-client-protocol.h"],
     visibility = ["//visibility:public"],
+    deps = [
+        ":wayland-private",
+        ":wayland-util",
+    ],
 )

@@ -11,14 +11,14 @@ class Library {
   ~Library();
 
   template <typename T>
-  T GetSymbolAddress(const char *symbol_address) {
-    return reinterpret_cast<T>(GetSymbolAddressRaw(symbol_address));
+  T GetSymbolAddress(const char *symbol_name) {
+    return reinterpret_cast<T>(GetSymbolAddressRaw(symbol_name));
   }
 
  private:
   void *handle_;
 
-  void *GetSymbolAddressRaw(const char *symbol_address);
+  void *GetSymbolAddressRaw(const char *symbol_name);
 };
 
 }  // namespace util

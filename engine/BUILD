@@ -6,7 +6,7 @@ cc_binary(
     deps = [
         "//engine/graphics",
         "//engine/graphics/egl",
-        "//engine/graphics/wayland",
+        # "//engine/graphics/wayland",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         # "@glbinding",

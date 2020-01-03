@@ -11,5 +11,8 @@ cc_library(
 cc_library(
     name = "graphics",
     visibility = ["//visibility:public"],
-    deps = [":window"],
+    deps = [":window"] + select({
+        "@//platforms:is_linux": ["//engine/graphics/wayland"],
+        "@//platforms:is_windows": ["//engine/graphics/windows"],
+    }),
 )

@@ -13,6 +13,8 @@
 // #include "glbinding/glbinding.h"
 #include "glog/logging.h"
 
+#include "engine/graphics/windows/window.h"
+
 namespace {
 
 bool Running = true;
@@ -26,14 +28,17 @@ int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
 
   try {
-    util::Library egl_library("ANGLE");
-    graphics::egl::internal::LoadFunctions(egl_library);
+    // util::Library egl_library("ANGLE");
+    // graphics::egl::internal::LoadFunctions(egl_library);
 
+    auto display = engine::graphics::windows::WinDisplay{};
     // auto display = graphics::wayland::WlDisplay::ConnectToDefault();
     // auto egl_display = graphics::egl::EglDisplay::FromNative(display);
 
+    auto window =
+        engine::graphics::windows::WinWindow(display, "Voxel", 1080, 720);
     // auto window = graphics::wayland::WlWindow(display, "Voxel", 1080, 720);
-    // window.SetCloseCallback([]() { Running = false; });
+    window.SetCloseCallback([]() { Running = false; });
     // auto egl_surface = graphics::egl::EglSurface::FromNative(egl_display,
     // window);
 
@@ -53,8 +58,10 @@ int main(int argc, char *argv[]) {
 
     // egl_context.SwapBuffers();
 
-    // while (Running) display.HandleEvents();
-
+    while (Running) {
+      LOG(INFO) << "Events!";
+      display.HandleEvents();
+    }
     // egl_context.MakeNoneCurrent();
   } catch (std::exception &e) {
     LOG(FATAL) << e.what();

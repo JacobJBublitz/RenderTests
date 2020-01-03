@@ -38,3 +38,11 @@ class Window {
 };
 
 }  // namespace graphics
+
+namespace engine {
+namespace graphics {
+
+using namespace ::graphics;
+
+}  // namespace graphics
+}  // namespace engine

@@ -2,7 +2,6 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
     name = "libffi",
-    visibility=["//visibility:public"],
     srcs = [
         "src/closures.c",
         "src/java_raw_api.c",
@@ -29,5 +28,11 @@ cc_library(
         "x86_64-pc-linux-gnu/include/ffi.h",
         "x86_64-pc-linux-gnu/include/ffitarget.h",
     ],
-    includes = ["x86_64-pc-linux-gnu/include", "include", "x86_64-pc-linux-gnu"],
+    includes = [
+        "include",
+        "x86_64-pc-linux-gnu",
+        "x86_64-pc-linux-gnu/include",
+    ],
+    restricted_to = ["@platforms//os:posix"],
+    visibility = ["//visibility:public"],
 )

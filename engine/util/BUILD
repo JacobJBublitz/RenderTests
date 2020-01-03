@@ -1,24 +1,16 @@
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_import")
-
-cc_import(
-    name = "dl",
-    hdrs = ["dlfcn.h"],
-    shared_library = "libdl.so",
-    system_provided = True,
-)
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
     name = "library",
     srcs = select({
-        "@//platforms:windows": ["library_windows.cc"],
-        "//conditions:default": ["library_posix.cc"],
+        "@//platforms:is_windows": ["library_windows.cc"],
+        "@//platforms:is_posix": ["library_posix.cc"],
     }),
-    deps = select({
-        "@//platforms:posix": [":dl"],
-        "@//platforms:windows": [],
-    }),
-    # linkopts = ["-ldl"],
     hdrs = ["library.h"],
+    linkopts = select({
+        "@//platforms:is_posix": ["-ldl"],
+        "@//platforms:is_windows": [],
+    }),
 )
 
 cc_library(

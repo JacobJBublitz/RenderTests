@@ -30,7 +30,7 @@ run_binary(
     outs = ["wayland-version.h"],
     args = [
         "$(location src/wayland-version.h.in)",
-        "$(location wayland-version.h)"
+        "$(location wayland-version.h)",
     ],
     env = {
         "WAYLAND_VERSION_MAJOR": "1",
@@ -71,9 +71,9 @@ cc_library(
     name = "wayland-util",
     srcs = [
         "src/wayland-private.h",
-        "src/wayland-util.c",
         "src/wayland-server-core.h",
-        "wayland-version.h"
+        "src/wayland-util.c",
+        "wayland-version.h",
     ],
     hdrs = ["src/wayland-util.h"],
 )

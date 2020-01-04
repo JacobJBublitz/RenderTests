@@ -15,6 +15,14 @@ extern "C" {
 
 namespace graphics::wayland {
 
+namespace {
+
+std::list<const char *> kRequiredVulkanExtensions = {
+    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
+};
+
+}
+
 using namespace internal;
 
 const internal::Pointer::Listener WlDisplay::kPointerListener{
@@ -166,6 +174,17 @@ void WlDisplay::HandleEvents() {
   } else {
     handle_->CancelRead();
   }
+}
+
+bool WlDisplay::DoesVkQueueSupportPresentation(
+    vk::PhysicalDevice physical_device, uint32_t queue_family_index) {
+  return physical_device.getWaylandPresentationSupportKHR(
+             queue_family_index, reinterpret_cast<wl_display *>(handle_)) ==
+         VK_TRUE;
+}
+
+const std::list<const char *> &WlDisplay::GetRequiredVkExtensions() {
+  return kRequiredVulkanExtensions;
 }
 
 void WlDisplay::PointerEnterHandler(void *data, internal::Pointer *pointer,

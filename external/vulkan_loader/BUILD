@@ -2,29 +2,6 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 
-cc_binary(
-    name = "asm_offset",
-    srcs = [
-        "loader/asm_offset.c",
-        "loader/generated/vk_layer_dispatch_table.h",
-        "loader/generated/vk_loader_extensions.h",
-        "loader/loader.h",
-        "loader/vk_loader_layer.h",
-        "loader/vk_loader_platform.h",
-    ],
-    deps = ["@vulkan_headers"],
-)
-
-run_binary(
-    name = "make_gen_defines",
-    outs = ["gen_defines.asm"],
-    args = select({
-        "@//platforms:is_linux": ["GAS"],
-        "@//platforms:is_windows": ["MASM"],
-    }),
-    tool = ":asm_offset",
-)
-
 write_file(
     name = "write_loader_cmake_config_h",
     out = "loader_cmake_config.h",
@@ -56,26 +33,36 @@ cc_library(
         "loader/phys_dev_ext.c",
         "loader/generated/vk_dispatch_table_helper.h",
         "loader/generated/vk_layer_dispatch_table.h",
-        "loader/generated/vk_loader_extensions.c",
         "loader/generated/vk_loader_extensions.h",
         "loader/generated/vk_object_types.h",
         "loader_cmake_config.h",
+        "loader/extension_manual.h",
+        "loader/unknown_ext_chain.c",
     ] + select({
-        "@//platforms:is_linux": ["gen_defines.asm"],
+        "@//platforms:is_linux": [
+        ],
         "@//platforms:is_windows": [
             "loader/adapters.h",
-            "gen_defines.asm",
             "loader/dirent_on_windows.c",
             "loader/dxgi_loader.c",
             "loader/dxgi_loader.h",
+            "loader/unknown_ext_chain_masm.asm",
         ],
     }),
-    defines = select({
+    includes = [
+        "loader",
+        "loader/generated",
+    ],
+    local_defines = select({
         "@//platforms:is_linux": [
             "VK_USE_PLATFORM_XCB_KHR",
             "VK_USE_PLATFORM_XLIB_KHR",
             "VK_USE_PLATFORM_XLIB_XRANDR_EXT",
             "VK_USE_PLATFORM_WAYLAND_KHR",
+            "FALLBACK_CONFIG_DIRS=\\\"/etc/xdg\\\"",
+            "FALLBACK_DATA_DIRS=\\\"/usr/local/share:/usr/share\\\"",
+            "SYSCONFDIR=\\\"\\\"",
+            "HAVE_CET_H",
         ],
         "@//platforms:is_windows": [
             "VK_USE_PLATFORM_WIN32_KHR",
@@ -83,9 +70,8 @@ cc_library(
             "API_NAME=\"Vulkan\"",
         ],
     }),
-    includes = [
-        "loader",
-        "loader/generated",
+    textual_hdrs = [
+        "loader/generated/vk_loader_extensions.c",
     ],
     visibility = ["//visibility:public"],
     deps = ["@vulkan_headers"],

@@ -3,22 +3,32 @@
 #include <list>
 #include <memory>
 
+#define VK_USE_PLATFORM_WAYLAND_KHR
+
 #include "engine/graphics/egl/surface.h"
+#include "engine/graphics/vulkan/surface.h"
 #include "engine/graphics/wayland/display.h"
 #include "engine/graphics/wayland/internal/egl.h"
 #include "engine/graphics/window.h"
 
 namespace graphics::wayland {
 
-class WlSurface {
+class WlSurface : public engine::graphics::vulkan::VulkanNativeSurface {
  public:
-  WlSurface(internal::Compositor *compositor)
-      : WlSurface(compositor->CreateSurface()) {}
-  WlSurface(internal::Surface *handle);
+  WlSurface(WlDisplay &display, internal::Compositor *compositor,
+            uint32_t width, uint32_t height)
+      : WlSurface(display, compositor->CreateSurface(), width, height) {}
+  WlSurface(WlDisplay &display, internal::Surface *handle, uint32_t width,
+            uint32_t height);
   WlSurface(const WlSurface &) = delete;  // No copy
   virtual ~WlSurface();
 
   virtual void HandlePointerMotion(uint32_t time, double x, double y);
+
+  engine::graphics::vulkan::VulkanSurface CreateVulkanSurface(
+      vk::Instance instance) final;
+
+  void GetVulkanSurfaceSize(uint32_t &width, uint32_t &height) final;
 
   internal::Surface *GetSurfaceHandle() noexcept { return handle_; }
 
@@ -27,7 +37,11 @@ class WlSurface {
  private:
   static const internal::Surface::Listener kSurfaceListener;
 
+  WlDisplay &display_;
   internal::Surface *handle_;
+
+  uint32_t width_;
+  uint32_t height_;
 
   std::list<internal::Output *> outputs_;
 };

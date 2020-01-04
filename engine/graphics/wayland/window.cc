@@ -23,7 +23,9 @@ const internal::Surface::Listener WlSurface::kSurfaceListener{
         },
 };
 
-WlSurface::WlSurface(internal::Surface *handle) : handle_(handle) {
+WlSurface::WlSurface(WlDisplay &display, internal::Surface *handle,
+                     uint32_t width, uint32_t height)
+    : display_(display), handle_(handle), width_(width), height_(height) {
   LOG_IF(FATAL, handle == nullptr) << "Surface handle is null";
 
   handle_->SetUserData(this);
@@ -37,6 +39,20 @@ void WlSurface::HandlePointerMotion(uint32_t time, double x, double y) {
   LOG(INFO) << "X: " << x << ", Y: " << y;
 }
 
+engine::graphics::vulkan::VulkanSurface WlSurface::CreateVulkanSurface(
+    vk::Instance instance) {
+  vk::WaylandSurfaceCreateInfoKHR create_info;
+  create_info.setDisplay(reinterpret_cast<wl_display *>(display_.GetHandle()));
+  create_info.setSurface(reinterpret_cast<wl_surface *>(handle_));
+
+  return {instance, instance.createWaylandSurfaceKHR(create_info), this};
+}
+
+void WlSurface::GetVulkanSurfaceSize(uint32_t &width, uint32_t &height) {
+  width = width_;
+  height = height_;
+}
+
 const internal::XdgSurface::Listener WlWindow::XdgSurfaceListener{
     .Configure = XdgSurfaceConfigureEvent,
 };
@@ -47,7 +63,7 @@ const internal::XdgToplevel::Listener WlWindow::XdgToplevelListener{
 
 WlWindow::WlWindow(WlDisplay &display, const std::string &title, uint32_t width,
                    uint32_t height)
-    : WlSurface(display.GetCompositor()),
+    : WlSurface(display, display.GetCompositor(), width, height),
       egl_surface_(GetSurfaceHandle(), static_cast<int>(width),
                    static_cast<int>(height)) {
   xdg_surface_ = display.GetXdgWmBase()->GetXdgSurface(GetSurfaceHandle());

@@ -33,6 +33,5 @@ cc_library(
         "x86_64-pc-linux-gnu",
         "x86_64-pc-linux-gnu/include",
     ],
-    restricted_to = ["@platforms//os:posix"],
     visibility = ["//visibility:public"],
 )

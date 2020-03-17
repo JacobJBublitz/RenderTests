@@ -28,11 +28,23 @@ git_repository(
     remote = "https://github.com/google/glog.git",
 )
 
+git_repository(
+    name = "com_google_googletest",
+    tag = "release-1.10.0",
+    remote = "https://github.com/google/googletest.git",
+)
+
 new_git_repository(
     name = "fmt",
     build_file = "fmt/BUILD",
     remote = "https://github.com/fmtlib/fmt.git",
     tag = "6.1.2",
+)
+
+git_repository(
+    name = "glslang",
+    remote = "https://github.com/KhronosGroup/glslang",
+    tag = "8.13.3559",
 )
 
 http_archive(
@@ -76,7 +88,7 @@ new_git_repository(
     build_file = "wayland/BUILD",
     patches = ["wayland/fix_includes.patch"],
     remote = "https://gitlab.freedesktop.org/wayland/wayland.git",
-    tag = "1.17.0",
+    tag = "1.18.0",
 )
 
 new_git_repository(

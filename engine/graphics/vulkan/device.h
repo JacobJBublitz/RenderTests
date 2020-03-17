@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "engine/graphics/vulkan/render_pass.h"
 #include "vulkan/vulkan.hpp"
 
 namespace engine::graphics::vulkan {
@@ -28,6 +29,10 @@ class VulkanDevice {
       : handle_(handle), physical_device_(physical_device) {}
   VulkanDevice(const VulkanDevice &) = delete;
   ~VulkanDevice() { handle_.destroy(); }
+
+  VulkanRenderPass CreateRenderPass(
+      const std::vector<vk::AttachmentDescription> &attachments,
+      const std::vector<VulkanSubpass> &subpasses);
 
   vk::Device GetHandle() noexcept { return handle_; }
 
